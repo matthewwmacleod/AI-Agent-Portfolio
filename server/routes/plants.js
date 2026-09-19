@@ -1,6 +1,8 @@
 import { Router } from "express";
 import { nanoid } from "nanoid";
-import { db } from "../db/index.js";
+import { pool } from "../db/index.js";
+import { buildInsert, buildUpdate } from "../db/queryHelpers.js";
+import { asyncHandler } from "../utils/asyncHandler.js";
 
 const router = Router();
 
@@ -19,92 +21,109 @@ const PLANT_FIELDS = [
   "pos_y",
 ];
 
+// Date/timestamp columns reject "" in Postgres (unlike SQLite's loose TEXT
+// typing) — an empty date input from the client means "no value", i.e. null.
+const DATE_FIELDS = new Set(["last_watered", "last_fertilized", "planted_date"]);
+
 function pickPlantInput(body) {
   const input = {};
   for (const field of PLANT_FIELDS) {
-    if (body[field] !== undefined) input[field] = body[field];
+    if (body[field] === undefined) continue;
+    input[field] = DATE_FIELDS.has(field) && body[field] === "" ? null : body[field];
   }
   return input;
 }
 
-router.get("/", (req, res) => {
-  const plants = db.prepare("SELECT * FROM plants ORDER BY created_at DESC").all();
-  res.json(plants);
-});
+router.get(
+  "/",
+  asyncHandler(async (req, res) => {
+    const { rows } = await pool.query("SELECT * FROM plants ORDER BY created_at DESC");
+    res.json(rows);
+  })
+);
 
-router.get("/:id", (req, res) => {
-  const plant = db.prepare("SELECT * FROM plants WHERE id = ?").get(req.params.id);
-  if (!plant) return res.status(404).json({ error: "Plant not found" });
-  const logs = db
-    .prepare("SELECT * FROM care_logs WHERE plant_id = ? ORDER BY logged_at DESC")
-    .all(req.params.id);
-  res.json({ ...plant, care_logs: logs });
-});
+router.get(
+  "/:id",
+  asyncHandler(async (req, res) => {
+    const { rows } = await pool.query("SELECT * FROM plants WHERE id = $1", [req.params.id]);
+    const plant = rows[0];
+    if (!plant) return res.status(404).json({ error: "Plant not found" });
 
-router.post("/", (req, res) => {
-  const input = pickPlantInput(req.body);
-  if (!input.name) return res.status(400).json({ error: "name is required" });
+    const { rows: logs } = await pool.query(
+      "SELECT * FROM care_logs WHERE plant_id = $1 ORDER BY logged_at DESC",
+      [req.params.id]
+    );
+    res.json({ ...plant, care_logs: logs });
+  })
+);
 
-  const id = nanoid();
-  const fields = ["id", ...Object.keys(input)];
-  const placeholders = fields.map(() => "?").join(", ");
-  const values = [id, ...Object.values(input)];
+router.post(
+  "/",
+  asyncHandler(async (req, res) => {
+    const input = pickPlantInput(req.body);
+    if (!input.name) return res.status(400).json({ error: "name is required" });
 
-  db.prepare(`INSERT INTO plants (${fields.join(", ")}) VALUES (${placeholders})`).run(...values);
-  const plant = db.prepare("SELECT * FROM plants WHERE id = ?").get(id);
-  res.status(201).json(plant);
-});
+    const id = nanoid();
+    const { text, values } = buildInsert("plants", "id", id, input);
+    const { rows } = await pool.query(text, values);
+    res.status(201).json(rows[0]);
+  })
+);
 
-router.patch("/:id", (req, res) => {
-  const existing = db.prepare("SELECT * FROM plants WHERE id = ?").get(req.params.id);
-  if (!existing) return res.status(404).json({ error: "Plant not found" });
+router.patch(
+  "/:id",
+  asyncHandler(async (req, res) => {
+    const { rows: existingRows } = await pool.query("SELECT * FROM plants WHERE id = $1", [req.params.id]);
+    const existing = existingRows[0];
+    if (!existing) return res.status(404).json({ error: "Plant not found" });
 
-  const input = pickPlantInput(req.body);
-  if (Object.keys(input).length === 0) return res.json(existing);
+    const input = pickPlantInput(req.body);
+    if (Object.keys(input).length === 0) return res.json(existing);
 
-  const setClause = Object.keys(input)
-    .map((key) => `${key} = ?`)
-    .join(", ");
-  db.prepare(`UPDATE plants SET ${setClause} WHERE id = ?`).run(...Object.values(input), req.params.id);
+    const { text, values } = buildUpdate("plants", "id", req.params.id, input);
+    const { rows } = await pool.query(text, values);
+    res.json(rows[0]);
+  })
+);
 
-  const plant = db.prepare("SELECT * FROM plants WHERE id = ?").get(req.params.id);
-  res.json(plant);
-});
-
-router.delete("/:id", (req, res) => {
-  const result = db.prepare("DELETE FROM plants WHERE id = ?").run(req.params.id);
-  if (result.changes === 0) return res.status(404).json({ error: "Plant not found" });
-  res.status(204).send();
-});
+router.delete(
+  "/:id",
+  asyncHandler(async (req, res) => {
+    const { rowCount } = await pool.query("DELETE FROM plants WHERE id = $1", [req.params.id]);
+    if (rowCount === 0) return res.status(404).json({ error: "Plant not found" });
+    res.status(204).send();
+  })
+);
 
 // Log a care action (water, fertilize, prune, note) and update the plant's tracking fields.
-router.post("/:id/care", (req, res) => {
-  const plant = db.prepare("SELECT * FROM plants WHERE id = ?").get(req.params.id);
-  if (!plant) return res.status(404).json({ error: "Plant not found" });
+router.post(
+  "/:id/care",
+  asyncHandler(async (req, res) => {
+    const { rows: plantRows } = await pool.query("SELECT * FROM plants WHERE id = $1", [req.params.id]);
+    const plant = plantRows[0];
+    if (!plant) return res.status(404).json({ error: "Plant not found" });
 
-  const { type, notes = "" } = req.body;
-  if (!["water", "fertilize", "prune", "note"].includes(type)) {
-    return res.status(400).json({ error: "type must be one of water, fertilize, prune, note" });
-  }
+    const { type, notes = "" } = req.body;
+    if (!["water", "fertilize", "prune", "note"].includes(type)) {
+      return res.status(400).json({ error: "type must be one of water, fertilize, prune, note" });
+    }
 
-  const id = nanoid();
-  const now = new Date().toISOString();
-  db.prepare("INSERT INTO care_logs (id, plant_id, type, notes, logged_at) VALUES (?, ?, ?, ?, ?)").run(
-    id,
-    plant.id,
-    type,
-    notes,
-    now
-  );
+    const id = nanoid();
+    const now = new Date().toISOString();
+    await pool.query(
+      "INSERT INTO care_logs (id, plant_id, type, notes, logged_at) VALUES ($1, $2, $3, $4, $5)",
+      [id, plant.id, type, notes, now]
+    );
 
-  if (type === "water") {
-    db.prepare("UPDATE plants SET last_watered = ? WHERE id = ?").run(now, plant.id);
-  } else if (type === "fertilize") {
-    db.prepare("UPDATE plants SET last_fertilized = ? WHERE id = ?").run(now, plant.id);
-  }
+    if (type === "water") {
+      await pool.query("UPDATE plants SET last_watered = $1 WHERE id = $2", [now, plant.id]);
+    } else if (type === "fertilize") {
+      await pool.query("UPDATE plants SET last_fertilized = $1 WHERE id = $2", [now, plant.id]);
+    }
 
-  const updatedPlant = db.prepare("SELECT * FROM plants WHERE id = ?").get(plant.id);
-  res.status(201).json(updatedPlant);
-});
+    const { rows: updatedRows } = await pool.query("SELECT * FROM plants WHERE id = $1", [plant.id]);
+    res.status(201).json(updatedRows[0]);
+  })
+);
 
 export default router;

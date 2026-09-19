@@ -4,6 +4,7 @@ import cors from "cors";
 import path from "node:path";
 import fs from "node:fs";
 import { fileURLToPath } from "node:url";
+import { initSchema } from "./db/index.js";
 import plantsRouter from "./routes/plants.js";
 import bedsRouter from "./routes/beds.js";
 import advisorRouter from "./routes/advisor.js";
@@ -38,6 +39,8 @@ app.use((err, req, res, next) => {
   console.error(err);
   res.status(500).json({ error: "Internal server error" });
 });
+
+await initSchema();
 
 app.listen(PORT, () => {
   console.log(`Garden app server listening on http://localhost:${PORT}`);

@@ -16,31 +16,38 @@ AI-powered gardening advice.
 
 ### Stack
 
-- **Backend:** Node.js, Express, SQLite (`better-sqlite3`), Anthropic SDK
+- **Backend:** Node.js, Express, PostgreSQL (`pg`), Anthropic SDK
 - **Frontend:** React (Vite), React Router
 
 ### Project layout
 
 ```
-server/   Express API + SQLite database
+server/   Express API + Postgres database
 client/   React (Vite) frontend
 ```
 
 ### Setup
 
-**1. Backend**
+**1. Database**
+
+You need a Postgres database and its connection string. For local development, either run
+Postgres locally or grab a free instance from a hosted provider (see the deploy section
+below for free options — the same database works for local dev and production).
+
+**2. Backend**
 
 ```bash
 cd server
 npm install
-cp .env.example .env   # then set ANTHROPIC_API_KEY to enable the AI advisor
+cp .env.example .env   # set DATABASE_URL, and ANTHROPIC_API_KEY to enable the AI advisor
 npm run dev             # starts the API on http://localhost:4000
 ```
 
-The AI advisor endpoint returns a friendly error if `ANTHROPIC_API_KEY` isn't set —
-everything else (plant tracking, planner) works without it.
+The server creates its tables automatically on startup if they don't exist. The AI advisor
+endpoint returns a friendly error if `ANTHROPIC_API_KEY` isn't set — everything else (plant
+tracking, planner) works without it.
 
-**2. Frontend**
+**3. Frontend**
 
 ```bash
 cd client
@@ -79,15 +86,22 @@ cd client && npm install && npm run build
 cd ../server && npm install && npm start
 ```
 
-**2. Deploy it somewhere with HTTPS.** Any host that runs a long-lived Node process works —
-e.g. Render, Fly.io, Railway, a VPS behind Caddy/Nginx. Point it at this repo, set the build
-command to `cd client && npm install && npm run build`, the start command to
-`cd server && npm install && npm start`, and set `ANTHROPIC_API_KEY` (and `PORT` if required)
-as environment variables.
+**2. Get a Postgres database.** [Neon](https://neon.tech) and [Supabase](https://supabase.com)
+both have free tiers with real persistent storage (unlike most free app-hosting tiers, which
+wipe local files like a SQLite database on every redeploy). Either gives you a connection
+string to use as `DATABASE_URL`.
 
-**3. On your iPhone**, open the deployed URL in **Safari** (must be Safari, not Chrome) →
+**3. Deploy the app somewhere with HTTPS.** Any host that runs a long-lived Node process
+works — e.g. Render, Fly.io, Railway, a VPS behind Caddy/Nginx. Point it at this repo, set
+the build command to `cd client && npm install && npm run build`, the start command to
+`cd server && npm install && npm start`, and set `DATABASE_URL`, `ANTHROPIC_API_KEY`, and
+`PORT` (if required) as environment variables.
+
+**4. On your iPhone**, open the deployed URL in **Safari** (must be Safari, not Chrome) →
 tap the **Share** icon → **Add to Home Screen**. The app now launches full-screen with its
-own icon, and reads/writes go straight to your deployed API.
+own icon, and reads/writes go straight to your deployed API and database.
 
 The service worker caches the app shell for fast loads and offline resilience, but API
 requests (plant data, AI advisor) always hit the network live — there's no offline data sync.
+Since the database is now real Postgres rather than a local file, your plants and garden
+beds persist across redeploys.
