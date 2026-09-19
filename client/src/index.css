@@ -1,0 +1,184 @@
+:root {
+  --color-bg: #f6f5ef;
+  --color-surface: #ffffff;
+  --color-border: #e1ddd0;
+  --color-text: #2b2b23;
+  --color-text-muted: #6b6b5f;
+  --color-primary: #3f7d4f;
+  --color-primary-dark: #2f5f3b;
+  --color-primary-light: #e7f1e8;
+  --color-accent: #c96a3f;
+  --color-accent-light: #fbe9e0;
+  --color-warn: #c2410c;
+  --color-warn-light: #fdecdf;
+  --color-danger: #b3261e;
+  --radius: 12px;
+  --shadow: 0 1px 3px rgba(43, 43, 35, 0.08), 0 1px 2px rgba(43, 43, 35, 0.06);
+  font-family: "Segoe UI", system-ui, -apple-system, "Helvetica Neue", Arial, sans-serif;
+}
+
+* {
+  box-sizing: border-box;
+}
+
+html,
+body,
+#root {
+  height: 100%;
+}
+
+body {
+  margin: 0;
+  background: var(--color-bg);
+  color: var(--color-text);
+}
+
+button {
+  font-family: inherit;
+  cursor: pointer;
+}
+
+input,
+textarea,
+select {
+  font-family: inherit;
+  font-size: 0.95rem;
+}
+
+a {
+  color: inherit;
+}
+
+h1,
+h2,
+h3 {
+  margin: 0 0 0.4rem;
+  color: var(--color-primary-dark);
+}
+
+.btn {
+  border: 1px solid var(--color-primary);
+  background: var(--color-primary);
+  color: white;
+  padding: 0.5rem 1rem;
+  border-radius: 8px;
+  font-weight: 600;
+  font-size: 0.9rem;
+  transition: background 0.15s ease, transform 0.05s ease;
+}
+
+.btn:hover {
+  background: var(--color-primary-dark);
+}
+
+.btn:active {
+  transform: translateY(1px);
+}
+
+.btn.secondary {
+  background: transparent;
+  color: var(--color-primary-dark);
+}
+
+.btn.secondary:hover {
+  background: var(--color-primary-light);
+}
+
+.btn.danger {
+  background: transparent;
+  border-color: var(--color-danger);
+  color: var(--color-danger);
+}
+
+.btn.danger:hover {
+  background: #fbe4e2;
+}
+
+.btn:disabled {
+  opacity: 0.55;
+  cursor: not-allowed;
+}
+
+.card {
+  background: var(--color-surface);
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius);
+  box-shadow: var(--shadow);
+  padding: 1.25rem;
+}
+
+.pill {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.3rem;
+  padding: 0.15rem 0.6rem;
+  border-radius: 999px;
+  font-size: 0.78rem;
+  font-weight: 600;
+}
+
+.pill.ok {
+  background: var(--color-primary-light);
+  color: var(--color-primary-dark);
+}
+
+.pill.due {
+  background: var(--color-warn-light);
+  color: var(--color-warn);
+}
+
+.pill.overdue {
+  background: #fbe4e2;
+  color: var(--color-danger);
+}
+
+.pill.never {
+  background: #eee;
+  color: var(--color-text-muted);
+}
+
+.field {
+  display: flex;
+  flex-direction: column;
+  gap: 0.3rem;
+  margin-bottom: 0.85rem;
+}
+
+.field label {
+  font-size: 0.82rem;
+  font-weight: 600;
+  color: var(--color-text-muted);
+}
+
+.field input,
+.field textarea,
+.field select {
+  padding: 0.5rem 0.6rem;
+  border-radius: 8px;
+  border: 1px solid var(--color-border);
+  background: var(--color-surface);
+  color: var(--color-text);
+}
+
+.field input:focus,
+.field textarea:focus,
+.field select:focus {
+  outline: 2px solid var(--color-primary);
+  outline-offset: 1px;
+}
+
+.empty-state {
+  color: var(--color-text-muted);
+  text-align: center;
+  padding: 2rem 1rem;
+}
+
+.error-banner {
+  background: #fbe4e2;
+  color: var(--color-danger);
+  border: 1px solid #f3b8b3;
+  border-radius: 8px;
+  padding: 0.6rem 0.9rem;
+  margin-bottom: 1rem;
+  font-size: 0.9rem;
+}
