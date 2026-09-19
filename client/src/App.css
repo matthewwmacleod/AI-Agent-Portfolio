@@ -9,6 +9,9 @@
   align-items: center;
   justify-content: space-between;
   padding: 0.9rem 1.5rem;
+  padding-top: max(0.9rem, env(safe-area-inset-top));
+  padding-left: max(1.5rem, env(safe-area-inset-left));
+  padding-right: max(1.5rem, env(safe-area-inset-right));
   background: var(--color-surface);
   border-bottom: 1px solid var(--color-border);
   position: sticky;
@@ -62,6 +65,9 @@
   max-width: 1080px;
   margin: 0 auto;
   padding: 1.5rem;
+  padding-bottom: max(1.5rem, env(safe-area-inset-bottom));
+  padding-left: max(1.5rem, env(safe-area-inset-left));
+  padding-right: max(1.5rem, env(safe-area-inset-right));
 }
 
 .page-header {
