@@ -11,10 +11,6 @@ export default function Planner() {
   const [showAddBed, setShowAddBed] = useState(false);
   const [placingPlantId, setPlacingPlantId] = useState(null);
 
-  useEffect(() => {
-    load();
-  }, []);
-
   async function load() {
     setLoading(true);
     try {
@@ -29,6 +25,10 @@ export default function Planner() {
       setLoading(false);
     }
   }
+
+  useEffect(() => {
+    load();
+  }, []);
 
   async function handleAddBed(data) {
     const bed = await api.createBed(data);

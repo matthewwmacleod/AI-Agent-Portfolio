@@ -10,10 +10,6 @@ export default function Dashboard() {
   const [error, setError] = useState("");
   const [actingId, setActingId] = useState(null);
 
-  useEffect(() => {
-    load();
-  }, []);
-
   async function load() {
     setLoading(true);
     try {
@@ -25,6 +21,10 @@ export default function Dashboard() {
       setLoading(false);
     }
   }
+
+  useEffect(() => {
+    load();
+  }, []);
 
   async function handleCare(plant, type) {
     setActingId(plant.id);

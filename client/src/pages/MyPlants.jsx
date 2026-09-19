@@ -13,10 +13,6 @@ export default function MyPlants() {
   const [editingPlant, setEditingPlant] = useState(null);
   const [expandedId, setExpandedId] = useState(null);
 
-  useEffect(() => {
-    load();
-  }, []);
-
   async function load() {
     setLoading(true);
     try {
@@ -28,6 +24,10 @@ export default function MyPlants() {
       setLoading(false);
     }
   }
+
+  useEffect(() => {
+    load();
+  }, []);
 
   async function handleAdd(data) {
     const created = await api.createPlant(data);

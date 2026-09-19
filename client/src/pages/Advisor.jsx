@@ -9,7 +9,6 @@ export default function Advisor() {
   const [imagePreview, setImagePreview] = useState(null);
   const [messages, setMessages] = useState([]);
   const [sending, setSending] = useState(false);
-  const [error, setError] = useState("");
   const [aiConfigured, setAiConfigured] = useState(true);
   const fileInputRef = useRef(null);
   const endRef = useRef(null);
@@ -46,7 +45,6 @@ export default function Advisor() {
       plantName: plants.find((p) => p.id === plantId)?.name,
     };
     setMessages((prev) => [...prev, userMessage]);
-    setError("");
     setSending(true);
 
     const askQuestion = question;
@@ -58,7 +56,6 @@ export default function Advisor() {
       const { answer } = await api.askAdvisor({ question: askQuestion, plantId: plantId || undefined, image: askImage });
       setMessages((prev) => [...prev, { role: "assistant", text: answer }]);
     } catch (err) {
-      setError(err.message);
       setMessages((prev) => [...prev, { role: "assistant", text: `⚠️ ${err.message}`, isError: true }]);
     } finally {
       setSending(false);
