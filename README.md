@@ -79,11 +79,13 @@ served from a single origin so the API and the app share one URL.
 
 **1. Build the client and run the server in "production" mode** — the server automatically
 serves the built client (and falls back to `index.html` for client-side routes) whenever
-`client/dist` exists:
+`client/dist` exists. A root-level `package.json` wires this up as the standard
+`npm install && npm run build && npm start` sequence most hosts run automatically:
 
 ```bash
-cd client && npm install && npm run build
-cd ../server && npm install && npm start
+npm install
+npm run build   # builds client/, then installs server/ deps
+npm start        # runs the server, serving the built client + API from one origin
 ```
 
 **2. Get a Postgres database.** [Neon](https://neon.tech) and [Supabase](https://supabase.com)
@@ -92,10 +94,14 @@ wipe local files like a SQLite database on every redeploy). Either gives you a c
 string to use as `DATABASE_URL`.
 
 **3. Deploy the app somewhere with HTTPS.** Any host that runs a long-lived Node process
-works — e.g. Render, Fly.io, Railway, a VPS behind Caddy/Nginx. Point it at this repo, set
-the build command to `cd client && npm install && npm run build`, the start command to
-`cd server && npm install && npm start`, and set `DATABASE_URL`, `ANTHROPIC_API_KEY`, and
-`PORT` (if required) as environment variables.
+works — e.g. Render, Fly.io, Railway, a VPS behind Caddy/Nginx.
+
+- **Render:** this repo includes a `render.yaml` blueprint — connect the repo in the Render
+  dashboard, it picks up the build/start commands automatically, and just prompts you for
+  `DATABASE_URL` and `ANTHROPIC_API_KEY`.
+- **Any other host:** set the build command to `npm install && npm run build`, the start
+  command to `npm start`, and set `DATABASE_URL`, `ANTHROPIC_API_KEY`, and `PORT` (if
+  required) as environment variables.
 
 **4. On your iPhone**, open the deployed URL in **Safari** (must be Safari, not Chrome) →
 tap the **Share** icon → **Add to Home Screen**. The app now launches full-screen with its

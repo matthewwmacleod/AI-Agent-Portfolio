@@ -1,0 +1,12 @@
+{
+  "name": "garden-companion",
+  "private": true,
+  "description": "Deployment entry point: builds the client and installs server deps, then runs the server (which serves the built client + API from one origin).",
+  "scripts": {
+    "build": "npm install --prefix client && npm run build --prefix client && npm install --prefix server",
+    "start": "npm start --prefix server"
+  },
+  "engines": {
+    "node": ">=20"
+  }
+}

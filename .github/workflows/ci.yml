@@ -68,3 +68,48 @@ jobs:
           echo "Server did not become healthy in time"
           kill "$server_pid" 2>/dev/null || true
           exit 1
+
+  deploy-build:
+    name: Deploy pipeline (root install + build + start)
+    runs-on: ubuntu-latest
+    services:
+      postgres:
+        image: postgres:16
+        env:
+          POSTGRES_USER: gardenapp
+          POSTGRES_PASSWORD: gardenapp
+          POSTGRES_DB: gardenapp
+        ports:
+          - 5432:5432
+        options: >-
+          --health-cmd pg_isready
+          --health-interval 10s
+          --health-timeout 5s
+          --health-retries 5
+    env:
+      DATABASE_URL: postgres://gardenapp:gardenapp@localhost:5432/gardenapp
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: npm
+          cache-dependency-path: package-lock.json
+      - run: npm install
+      - run: npm run build
+      - name: Start via root npm start and check health endpoint
+        run: |
+          npm start &
+          server_pid=$!
+          for i in $(seq 1 20); do
+            if curl -sf http://localhost:4000/api/health; then
+              echo "Server is up"
+              curl -sf http://localhost:4000/ > /dev/null && echo "Client shell served OK"
+              kill "$server_pid"
+              exit 0
+            fi
+            sleep 0.5
+          done
+          echo "Server did not become healthy in time"
+          kill "$server_pid" 2>/dev/null || true
+          exit 1
